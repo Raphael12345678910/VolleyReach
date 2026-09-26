@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+  <rect width="1080" height="1080" fill="#e5eef3"/>
+  <text x="70" y="112" fill="#668fa8" font-family="Arial, sans-serif" font-size="22" font-weight="700">THE FIRST VOLLEYREACH PILOT</text>
+  <text x="70" y="196" fill="#17201d" font-family="Arial, sans-serif" font-size="61" font-weight="700">We are measuring use,</text>
+  <text x="70" y="270" fill="#17201d" font-family="Arial, sans-serif" font-size="61" font-weight="700">not chasing followers.</text>
+  <g transform="translate(70 345)">
+    <rect width="450" height="210" rx="8" fill="#12372e"/>
+    <text x="32" y="92" fill="#fff" font-family="Arial, sans-serif" font-size="76" font-weight="700">20</text>
+    <text x="32" y="145" fill="#9cc4b3" font-family="Arial, sans-serif" font-size="25">athletes onboarded</text>
+  </g>
+  <g transform="translate(560 345)">
+    <rect width="450" height="210" rx="8" fill="#fff"/>
+    <text x="32" y="92" fill="#e66449" font-family="Arial, sans-serif" font-size="76" font-weight="700">12</text>
+    <text x="32" y="145" fill="#68736e" font-family="Arial, sans-serif" font-size="25">completed profiles</text>
+  </g>
+  <g transform="translate(70 595)">
+    <rect width="280" height="210" rx="8" fill="#fff"/>
+    <text x="28" y="92" fill="#12372e" font-family="Arial, sans-serif" font-size="70" font-weight="700">60</text>
+    <text x="28" y="145" fill="#68736e" font-family="Arial, sans-serif" font-size="23">programs saved</text>
+  </g>
+  <g transform="translate(400 595)">
+    <rect width="280" height="210" rx="8" fill="#fff"/>
+    <text x="28" y="92" fill="#e66449" font-family="Arial, sans-serif" font-size="70" font-weight="700">25</text>
+    <text x="28" y="140" fill="#68736e" font-family="Arial, sans-serif" font-size="23">coach emails</text>
+    <text x="28" y="171" fill="#68736e" font-family="Arial, sans-serif" font-size="23">drafted or sent</text>
+  </g>
+  <g transform="translate(730 595)">
+    <rect width="280" height="210" rx="8" fill="#fff"/>
+    <text x="28" y="92" fill="#12372e" font-family="Arial, sans-serif" font-size="70" font-weight="700">3</text>
+    <text x="28" y="140" fill="#68736e" font-family="Arial, sans-serif" font-size="23">school or club</text>
+    <text x="28" y="171" fill="#68736e" font-family="Arial, sans-serif" font-size="23">partners</text>
+  </g>
+  <rect x="70" y="872" width="940" height="108" rx="8" fill="#e66449"/>
+  <text x="540" y="940" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="32" font-weight="700">JOIN THE USER TEST · HELP SHAPE WHAT COMES NEXT</text>
+  <text x="70" y="1022" fill="#68736e" font-family="Arial, sans-serif" font-size="20">Pilot targets · not current results</text>
+</svg>
