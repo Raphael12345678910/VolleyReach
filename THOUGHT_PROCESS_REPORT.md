@@ -84,7 +84,7 @@ This is described as a **video-calibrated estimate**, not an official measuremen
 
 ## Checkpoint 10: Visual Design and Usability
 
-The early app looked too much like a generic dark AI dashboard. I replaced that direction with an original visual system using forest green, coral, light blue, warm white, and dark text. I also changed the logo after noticing that an earlier circular mark looked too similar to OpenAI's branding.
+The early app looked too much like a generic dark AI dashboard. I replaced that direction with an original visual system using forest green, coral, light blue, warm white, and dark text. I also replaced the earlier circular logo with an open, angular V, net line, and upward reach arrow so the brand has its own silhouette and cannot be confused with ChatGPT's mark.
 
 Page transitions, school logos, progress states, clearer forms, and responsive layouts were added to make the product feel smoother and more complete. I tried to keep the design modern without making every section decorative or hiding the actual tasks.
 
