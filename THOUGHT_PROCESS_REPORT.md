@@ -84,7 +84,7 @@ This is described as a **video-calibrated estimate**, not an official measuremen
 
 ## Checkpoint 10: Visual Design and Usability
 
-The early app looked too much like a generic dark AI dashboard. I replaced that direction with an original visual system using forest green, coral, light blue, warm white, and dark text. I also replaced the earlier circular logo with an open, angular V, net line, and upward reach arrow so the brand has its own silhouette and cannot be confused with ChatGPT's mark.
+The early app looked too much like a generic dark AI dashboard. I replaced that direction with an original visual system using forest green, coral, light blue, warm white, and dark text. I also replaced the earlier circular logo with a collegiate pennant built from volleyball-court geometry. The coral marker represents an athlete finding a place in the college system, giving the brand its own meaning and silhouette without resembling ChatGPT's mark.
 
 Page transitions, school logos, progress states, clearer forms, and responsive layouts were added to make the product feel smoother and more complete. I tried to keep the design modern without making every section decorative or hiding the actual tasks.
 

@@ -9,7 +9,7 @@ Prepared September 26, 2026
 - 293 men's college volleyball programs and 722 grouped coach contacts imported
 - Jump Test supports a men's volleyball net and regulation basketball rim
 - GitHub README rewritten for the VolleyReach product and expanded with MVP evidence, testing method, and pilot targets
-- Differentiated logo replacing the circular volleyball pattern with a net and upward reach trajectory
+- Differentiated logo combining a collegiate pennant, volleyball-court geometry, and a single athlete marker
 - User-testing workbook with concise form questions, response validation, and automatic summary formulas
 - Published user-testing form: https://docs.google.com/forms/d/e/1FAIpQLScaz1iEH-XhrXnl5kZaMHCllueFKvqbT4UcYdCB7X2wOU2W5A/viewform
 - Brand and media kit with a content plan and 30-day social growth strategy
