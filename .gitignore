@@ -1,9 +1,0 @@
-dist/
-node_modules/
-.codex-artifacts/
-.DS_Store
-.env
-.env.*
-*.local
-deliverables/*.mov
-deliverables/*.inspect.ndjson
