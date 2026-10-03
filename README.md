@@ -82,6 +82,8 @@ The first pilot targets 20 athletes, 12 completed profiles, 60 saved programs, 2
 ## Project Evidence
 
 - [Live VolleyReach website](https://raphael12345678910.github.io/VolleyReach/)
+- [Thought process report](THOUGHT_PROCESS_REPORT.md) — a checkpoint-by-checkpoint account of the errors, decisions, pivot, and lessons from the project
+- [75-second MVP walkthrough](https://github.com/Raphael12345678910/VolleyReach/releases/tag/mvp-walkthrough-v1)
 - [`deliverables/VolleyReach_Brand_Media_and_Growth_Strategy.pptx`](deliverables/VolleyReach_Brand_Media_and_Growth_Strategy.pptx) — brand system, product screenshots, content plan, and 30-day growth strategy
 - [`deliverables/VolleyReach_Capstone_One_Pager.docx`](deliverables/VolleyReach_Capstone_One_Pager.docx) — revised capstone concept and technical feasibility
 - [`deliverables/brand/VolleyReach_Logo_Primary.svg`](deliverables/brand/VolleyReach_Logo_Primary.svg) — differentiated VolleyReach logo system

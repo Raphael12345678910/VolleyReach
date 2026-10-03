@@ -1,113 +1,108 @@
-# VolleyReach Development and Decision Report
+# VolleyReach Thought Process Report
 
-## Project Summary
+## Starting Point
 
-VolleyReach is a free web-based recruiting workspace for boys' volleyball athletes. It helps an athlete build a complete recruiting profile, discover real college programs, organize coach contacts, draft personalized outreach emails, and track follow-ups. An optional Jump Test helps athletes estimate supporting measurements such as standing reach, approach touch, and vertical.
+I started this project as **Spike Analyzer**, a tool that would let a volleyball player upload a hitting video and get automatic feedback on their form. The main idea was to use MediaPipe to track the player's body, calculate angles, and point out possible problems with the approach, arm swing, contact point, and landing.
 
-The project is designed for athletes and school or club programs that may not have access to paid recruiting platforms or dedicated recruiting support.
+I chose this idea because private coaching and advanced video analysis can be expensive. I wanted to make a free tool that could help players who do not have the same coaching resources as larger or better-funded programs.
 
-## How the Project Evolved
+## Checkpoint 1: Building the First Video Analyzer
 
-The original concept focused on volleyball hitting-form analysis using MediaPipe pose detection. The goal was to upload a hitting video and receive automatic technique feedback. Early prototypes exposed several problems:
+The first versions could upload a video and detect body landmarks. I also built calculations for arm and body angles and experimented with an AI coaching section.
 
-- Fast arm movement produced unstable body landmarks.
-- Camera angle and distance changed calculated joint angles.
-- Detecting ball contact accurately required reliable ball tracking.
-- The tool risked presenting approximate computer-vision output as precise coaching advice.
-- A credible biomechanics product would require a much larger labeled-video dataset and extensive validation.
+The main problem was that detecting a person was not the same as accurately analyzing a volleyball swing. Fast arm movement caused landmarks to jump around or disappear. A different camera angle could also change the result, even when the athlete used the same technique.
 
-Rather than continuing to add features to an unreliable analysis system, the project pivoted toward a problem that could be solved responsibly within the available timeline: organizing the men's volleyball recruiting process.
+One obvious error happened when the AI Coach expected a JSON response but received an HTML error page instead. The app displayed raw code beginning with `<!DOCTYPE html>` instead of useful feedback. I fixed parts of the connection, but it also made me realize that adding AI text did not solve the unreliable measurements underneath it.
 
-This pivot preserved the community-service purpose. Athletes with fewer recruiting resources can use the core workflow without paying for access to basic information or organization tools.
+## Checkpoint 2: Realizing Accuracy Was the Real Problem
 
-## Problem Definition
+I originally thought I could improve the analyzer by adjusting formulas and adding more rules. Testing showed that the larger problem was the quality of the input data.
 
-College volleyball recruiting information is fragmented. Athletes often manage profile details, highlight links, college research, coach contacts, email drafts, and follow-up dates across separate documents and websites. Players who are the first in their family or program to pursue college volleyball may not know what information coaches expect or how to begin outreach.
+To identify the exact moment of contact, the app would need reliable ball tracking as well as body tracking. It would also need to handle different phones, frame rates, lighting, distances, and camera angles. Without a large set of labeled volleyball videos and comparison testing with coaches, I could not honestly claim that the feedback was accurate.
 
-VolleyReach addresses four practical needs:
+This was an important realization. A form analyzer that looks advanced but gives inconsistent advice could be less useful than a simpler product that works reliably.
 
-1. Knowing which profile information is incomplete.
-2. Finding real men's college volleyball programs.
-3. Writing a personal email without inventing school-specific interest.
-4. Remembering who was contacted and when to follow up.
+## Checkpoint 3: Choosing to Pivot
 
-## Product Decisions
+With about a month left, I decided not to make automatic form analysis the center of the project. I looked at other problems volleyball players deal with and focused on recruiting.
 
-### Profile first
+Men's volleyball recruiting information is spread across school websites, spreadsheets, emails, highlight links, and recruiting services. Players who do not have a recruiting coordinator or paid platform may not know which schools have programs, what information a coach needs, or how to organize follow-ups.
 
-The email builder depends on the athlete profile. Users are therefore directed to complete essential personal, athletic, academic, film, and coach-contact fields before generating outreach. This prevents incomplete or contradictory information from appearing in an email.
+The project became **VolleyReach**, a free recruiting workspace for boys' volleyball players. This kept the original community-service goal, but moved it toward a problem I could solve and test more responsibly.
 
-Optional information, such as a tournament schedule or full-match video, is clearly labeled. Measurements and contact fields that coaches consistently use are treated as required.
+## Checkpoint 4: Learning From Existing Platforms Without Copying Them
 
-### Real programs instead of fictional recommendations
+I reviewed existing recruiting platforms, including My Recruit Path, to understand what made them useful and visually strong. I liked the idea of a clear sidebar, separate work areas, and a guided recruiting process.
 
-The directory contains 293 men's college volleyball programs and 722 grouped coach or staff contacts imported from the project source sheet. Missing information is labeled as needing research instead of being guessed.
+I did not want to copy another site's branding, wording, layout, or paid features. VolleyReach uses its own name, colors, logo, page structure, and workflow. Its focus is helping an athlete build a complete profile, research real programs, prepare personalized outreach, and track that outreach in one free tool.
 
-The Find Schools questionnaire uses only answers that change the output: competitive level, geographic region, coach-email availability, and preferred list size. The results are research leads, not admissions predictions or claims about roster openings.
+## Checkpoint 5: Rebuilding the App Around a Real Workflow
 
-### Personalization remains the athlete's responsibility
+The first recruiting version still had sections that looked good but did not do enough. Some buttons did not open anything, profile fields contained information that looked like it already belonged to the user, and the jump feature was emphasized too heavily.
 
-The email builder reuses factual profile information, coach names, program level, and conference details. It deliberately leaves a required school-specific research prompt visible. The athlete must add a detail that demonstrates genuine interest, such as a course, laboratory, team value, coaching philosophy, or recent match.
+I reorganized the app into separate pages with a permanent left navigation. I also removed vague promotional sections and made the main workflow clearer:
 
-VolleyReach prepares and organizes an email, but the athlete sends it from their own account.
+1. Complete an athlete profile.
+2. Find and save college programs.
+3. Research a specific school.
+4. Build a personalized coach email.
+5. Record the email and follow-up status.
 
-### Measurement as a supporting tool
+This made the app feel less like a demonstration and more like a tool someone could actually use.
 
-Vertical jump information can strengthen an athletic profile, but it is not the main product. The Jump Test uses a known-height men's volleyball net or regulation basketball rim as a visual reference. The athlete manually marks the floor, reference height, standing reach, and peak touch.
+## Checkpoint 6: Making the Profile the Source of Truth
 
-The result is labeled as an estimate with validation pending. The interface does not claim medical, biomechanical, or official combine-level accuracy.
+At first, the profile and email builder behaved like separate features. That created repeated work and made it possible for an email to contain incomplete information.
 
-## Technical Approach
+I changed the system so the email builder pulls from the athlete's saved profile. Required fields include information coaches regularly use, such as graduation year, position, height, jersey number, GPA, vertical, standing reach, and approach touch. Fields such as SAT score and upcoming tournament schedule are marked optional when they may not apply yet.
 
-The current MVP uses:
+Example information is now shown as light placeholder text instead of saved user data. The email builder also tells the athlete to finish the profile first, so the relationship between the two pages is clear.
 
-- React for the interface and reusable page components
-- Vite for local development and production builds
-- Framer Motion for restrained page transitions
-- Lucide icons for consistent interface controls
-- JSON for the read-only college and coach directory
-- Browser local storage for prototype profile and outreach persistence
-- GitHub Pages for public hosting
+## Checkpoint 7: Improving the Email Builder
 
-Hash-based routing allows every major section to behave like a separate page while remaining compatible with static hosting. The app is responsive across laptop and phone layouts.
+My own MIT recruiting email became the starting reference for the email format. I turned it into a reusable structure instead of hard-coding my personal information.
 
-No athlete account system or cloud database is included in this prototype. Data entered by a user stays in that browser. This reduces setup complexity for initial testing, but cross-device accounts are an important future feature.
+The builder can insert the athlete's facts, coach names, program information, video links, coach contact, and upcoming events. However, it does not pretend to research a school automatically. The athlete must add a real school-specific detail, such as an academic program, team value, coach philosophy, or recent result.
 
-## Visual and Brand Direction
+This decision was intentional. A generated email should save time, but it should not send fake or generic interest to a coach.
 
-The visual system uses forest green, coral, mist blue, warm paper, and dark ink. The interface is designed to feel calm and credible rather than like a generic AI product.
+## Checkpoint 8: Adding Real College Data
 
-The logo was revised after feedback that an earlier circular volleyball mark resembled OpenAI branding. The final mark combines a volleyball-net baseline, an upward reach path, and a ball endpoint. The product uses original volleyball imagery and does not copy the layout, wording, colors, or branding of another recruiting platform.
+The college directory was built from a source spreadsheet of men's volleyball programs and coach contacts. The source had repeated schools, inconsistent labels, and missing fields, so the information had to be grouped and cleaned before it could be used.
 
-## Development Challenges
+The current directory includes **293 programs and 722 grouped coach or staff contacts**. Missing information is left blank or marked for research instead of being invented. The school-fit questions use answers that actually change the results, including competitive level, region, contact availability, and number of schools requested.
 
-### Data normalization
+The results are possible schools to research. They are not promises of admission, roster openings, scholarships, or coach interest.
 
-The source coach sheet included repeated schools, inconsistent conference names, and incomplete contact fields. The data was grouped into program records while preserving listed contacts. Empty or unverifiable fields are shown honestly.
+## Checkpoint 9: Redefining the Jump Test
 
-### Useful personalization
+I kept a measurement tool because vertical and approach touch are useful on a recruiting profile, but it is no longer the main purpose of the app.
 
-Automatically generated recruiting emails can sound generic. The solution was to automate reusable facts while forcing a visible school-research step. This balances convenience with authenticity.
+An earlier idea used the top of a volleyball antenna as a reference. That was not universal enough, so I changed the reference to a regulation men's net or a basketball rim. The user uploads one continuous video, keeps the camera still and the reference straight, and manually marks the floor, known reference height, standing reach, and peak touch.
 
-### Scope control
+This is described as a **video-calibrated estimate**, not an official measurement. Camera tilt, depth, motion blur, and an incorrect marker can all change the result. The next accuracy step is to compare repeated app measurements against a Vertec or another accepted measurement method.
 
-The earlier computer-vision concept created accuracy claims that could not be validated in the project timeline. Moving to recruiting workflow software produced a more testable MVP with lower risk and clearer user outcomes.
+## Checkpoint 10: Visual Design and Usability
 
-### Public deployment
+The early app looked too much like a generic dark AI dashboard. I replaced that direction with an original visual system using forest green, coral, light blue, warm white, and dark text. I also changed the logo after noticing that an earlier circular mark looked too similar to OpenAI's branding.
 
-The app uses generated asset and data paths that work both locally and under the GitHub Pages project prefix. The production build is deployed separately from development files so temporary artifacts are not exposed.
+Page transitions, school logos, progress states, clearer forms, and responsive layouts were added to make the product feel smoother and more complete. I tried to keep the design modern without making every section decorative or hiding the actual tasks.
 
-## Testing and Evaluation Plan
+## Checkpoint 11: Publishing the Website
 
-The first structured test gives each participant three tasks:
+The project originally ran only on localhost, which meant nobody else could open it. Moving it to GitHub Pages created another issue: some file paths worked locally but failed when the website was hosted inside a repository path.
 
-1. Complete or review an athlete profile.
-2. Find at least one relevant college program.
-3. Build a coach email.
+I updated the build and routing so assets and page links work both locally and online. I also created a clean repository under the VolleyReach name so the final project is separate from the older Spike Analyzer experiments.
 
-The published feedback form measures task completion, navigation ease, professional appearance, feature usefulness, likelihood of weekly use, recommendation intent, confusion points, and the highest-priority improvement.
+The MVP now runs publicly and stores prototype profile and outreach data in the user's browser. It does not yet have accounts or a cloud database, so information does not automatically move between devices.
 
-Initial pilot targets are:
+## Checkpoint 12: Testing and Measuring Impact
+
+The next stage is not adding random features. It is watching real players and coaches use the main workflow.
+
+The first user test asks participants to complete or review a profile, find a relevant program, and build an email. A feedback form measures whether they completed the tasks, where they became confused, which feature was most useful, and whether they would use or recommend the app.
+
+My initial pilot goals are:
 
 - 20 athletes onboarded
 - 12 completed profiles
@@ -115,28 +110,19 @@ Initial pilot targets are:
 - 25 coach emails drafted or sent
 - 3 school or club partners
 
-These are proposed targets, not current results. Actual impact will be reported only after user testing.
+These are goals, not results I have already achieved. I will only report real numbers after testing.
 
-## Responsible Use and Limitations
+## What I Learned
 
-VolleyReach does not guarantee admission, recruitment, coach responses, scholarships, or roster availability. Directory details can become outdated and should be verified against official athletics websites before outreach.
+The biggest lesson was that a complicated idea is not automatically a better one. The original computer-vision concept sounded impressive, but I could not validate it well enough to make responsible coaching claims. The pivot made the project more useful, testable, and realistic within the timeline.
 
-The Jump Test is an estimate and should be benchmarked against a Vertec or another accepted measurement method before an accuracy range is published.
+I also learned that design does not fix a weak workflow. The app improved most when every page was connected to a real task: entering information once, finding schools, writing a stronger email, and remembering the next step.
 
-## Next Steps
+VolleyReach is still an MVP. Coach information can change, users should verify details on official school sites, and the Jump Test still needs formal accuracy testing. The current version is a working foundation that can now be improved using real feedback instead of guesses.
 
-The next development cycle will prioritize evidence from real users:
+## Project Links
 
-1. Observe at least five athletes or coaches completing the core tasks.
-2. Categorize confusion points and requested improvements.
-3. Fix the highest-frequency workflow problems.
-4. Record a second walkthrough showing before-and-after changes.
-5. Add optional accounts and cloud synchronization only after the local workflow is validated.
-6. Begin school and club outreach using the prepared social and media materials.
-
-## Current Evidence
-
-- Public MVP: https://raphael12345678910.github.io/VolleyReach/
-- Published feedback form: https://docs.google.com/forms/d/e/1FAIpQLScaz1iEH-XhrXnl5kZaMHCllueFKvqbT4UcYdCB7X2wOU2W5A/viewform
-- Source code and documentation: https://github.com/Raphael12345678910/VolleyReach
-
+- **New GitHub repository:** https://github.com/Raphael12345678910/VolleyReach
+- **Live website:** https://raphael12345678910.github.io/VolleyReach/
+- **MVP walkthrough:** https://github.com/Raphael12345678910/VolleyReach/releases/tag/mvp-walkthrough-v1
+- **Feedback form:** https://docs.google.com/forms/d/e/1FAIpQLScaz1iEH-XhrXnl5kZaMHCllueFKvqbT4UcYdCB7X2wOU2W5A/viewform
