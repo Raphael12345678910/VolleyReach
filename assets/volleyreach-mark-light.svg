@@ -1,10 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
   <title id="title">VolleyReach mark</title>
-  <desc id="desc">An angular V crosses a volleyball net while a reach arrow rises to a diamond contact point.</desc>
-  <path d="M8 14 24 50 40 14" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="M6 38h25" fill="none" stroke="#9cc4b3" stroke-width="4" stroke-linecap="square"/>
-  <path d="M9 34v9M29 34v9" fill="none" stroke="#9cc4b3" stroke-width="3" stroke-linecap="square"/>
-  <path d="m27 49 15-16 10-16" fill="none" stroke="#e66449" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="m46 17 8-5 1 10" fill="none" stroke="#e66449" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="m54 4 6 6-6 6-6-6Z" fill="#ffffff"/>
+  <desc id="desc">A collegiate pennant built from volleyball court lines, with one coral player marker.</desc>
+  <path d="M7 9h50v30L32 56 7 39Z" fill="#f7f8f5"/>
+  <path d="M15 19h34M20 29h24" fill="none" stroke="#12372e" stroke-width="3" stroke-linecap="square"/>
+  <path d="m16 14 16 36 16-36" fill="none" stroke="#668fa8" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="m44 11 7 7-7 7-7-7Z" fill="#e66449"/>
 </svg>
