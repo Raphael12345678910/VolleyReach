@@ -677,7 +677,9 @@ function JumpPage({ profile, setProfile }) {
 }
 
 function RecruitApp() {
-  const demoMode = new URLSearchParams(window.location.search).get("demo") === "1";
+  const query = new URLSearchParams(window.location.search);
+  const demoMode = query.get("demo") === "1";
+  const freshMode = query.get("fresh") === "1";
   const routeFromHash = () => { const route = window.location.hash.replace(/^#\/?/, ""); return ROUTES.includes(route) ? route : "home"; };
   const [active, setActive] = useState(routeFromHash);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -689,6 +691,13 @@ function RecruitApp() {
 
   useEffect(() => {
     try {
+      if (freshMode) {
+        setProfile(DEFAULT_PROFILE);
+        setSaved([]);
+        setSelectedSchoolId("");
+        window.localStorage.setItem("vr-profile-schema", PROFILE_SCHEMA_VERSION);
+        return;
+      }
       if (demoMode) {
         setProfile(DEMO_PROFILE);
         setSaved([
@@ -705,7 +714,7 @@ function RecruitApp() {
     } catch {
       // The prototype still works without local storage persistence.
     }
-  }, [demoMode, setProfile, setSaved]);
+  }, [demoMode, freshMode, setProfile, setSaved, setSelectedSchoolId]);
   useEffect(() => {
     fetch(publicUrl("data/coaches.json")).then((response) => response.json()).then((data) => setDirectory({ schools: data.schools || [], loading: false })).catch(() => setDirectory({ schools: [], loading: false }));
   }, []);
