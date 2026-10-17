@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" role="img" aria-labelledby="title desc">
   <title id="title">VolleyReach logo</title>
-  <desc id="desc">A collegiate pennant built from volleyball court lines beside the VolleyReach name.</desc>
-  <g transform="translate(13 16) scale(1.32)">
-    <path d="M7 9h50v30L32 56 7 39Z" fill="#12372e"/>
-    <path d="M15 19h34M20 29h24" fill="none" stroke="#f4f5f1" stroke-width="3" stroke-linecap="square"/>
-    <path d="m16 14 16 36 16-36" fill="none" stroke="#668fa8" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
-    <path d="m44 11 7 7-7 7-7-7Z" fill="#e66449"/>
+  <desc id="desc">Six slanted court positions with one coral athlete marker beside the VolleyReach name.</desc>
+  <g transform="translate(12 26) scale(.76)">
+    <path d="M0 21 16 0h48L48 21Z" fill="#12372e"/>
+    <path d="M70 21 86 0h48l-16 21Z" fill="#12372e"/>
+    <path d="M0 51 16 30h48L48 51Z" fill="#12372e"/>
+    <path d="M70 51 86 30h48l-16 21Z" fill="#e66449"/>
+    <path d="M0 81 16 60h48L48 81Z" fill="#12372e"/>
+    <path d="M70 81 86 60h48l-16 21Z" fill="#12372e"/>
   </g>
   <text x="111" y="77" fill="#12372e" font-family="Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="0">VolleyReach</text>
   <path d="M113 94h292" fill="none" stroke="#e66449" stroke-width="5" stroke-linecap="square"/>

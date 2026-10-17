@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 134 81" role="img" aria-labelledby="title desc">
   <title id="title">VolleyReach mark</title>
-  <desc id="desc">A collegiate pennant built from volleyball court lines, with one coral player marker.</desc>
-  <path d="M7 9h50v30L32 56 7 39Z" fill="#f7f8f5"/>
-  <path d="M15 19h34M20 29h24" fill="none" stroke="#12372e" stroke-width="3" stroke-linecap="square"/>
-  <path d="m16 14 16 36 16-36" fill="none" stroke="#668fa8" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
-  <path d="m44 11 7 7-7 7-7-7Z" fill="#e66449"/>
+  <desc id="desc">Six slanted court positions with one coral athlete marker.</desc>
+  <path d="M0 21 16 0h48L48 21Z" fill="#f7f8f5"/>
+  <path d="M70 21 86 0h48l-16 21Z" fill="#f7f8f5"/>
+  <path d="M0 51 16 30h48L48 51Z" fill="#f7f8f5"/>
+  <path d="M70 51 86 30h48l-16 21Z" fill="#e66449"/>
+  <path d="M0 81 16 60h48L48 81Z" fill="#f7f8f5"/>
+  <path d="M70 81 86 60h48l-16 21Z" fill="#f7f8f5"/>
 </svg>
