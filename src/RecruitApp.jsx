@@ -680,13 +680,16 @@ function RecruitApp() {
   const query = new URLSearchParams(window.location.search);
   const demoMode = query.get("demo") === "1";
   const freshMode = query.get("fresh") === "1";
+  const profileStorageKey = demoMode ? "vr-demo-profile" : "vr3-profile";
+  const outreachStorageKey = demoMode ? "vr-demo-outreach" : "vr2-outreach";
+  const schoolStorageKey = demoMode ? "vr-demo-selected-school" : "vr2-selected-school";
   const routeFromHash = () => { const route = window.location.hash.replace(/^#\/?/, ""); return ROUTES.includes(route) ? route : "home"; };
   const [active, setActive] = useState(routeFromHash);
   const [menuOpen, setMenuOpen] = useState(false);
   const [directory, setDirectory] = useState({ schools: [], loading: true });
-  const [profile, setProfile] = useStoredState("vr3-profile", DEFAULT_PROFILE);
-  const [saved, setSaved] = useStoredState("vr2-outreach", []);
-  const [selectedSchoolId, setSelectedSchoolId] = useStoredState("vr2-selected-school", "massachusetts-institute-of-technology-mit");
+  const [profile, setProfile] = useStoredState(profileStorageKey, demoMode ? DEMO_PROFILE : DEFAULT_PROFILE);
+  const [saved, setSaved] = useStoredState(outreachStorageKey, []);
+  const [selectedSchoolId, setSelectedSchoolId] = useStoredState(schoolStorageKey, demoMode ? "massachusetts-institute-of-technology-mit" : "");
   const [profileFocus, setProfileFocus] = useState("");
 
   useEffect(() => {
@@ -696,6 +699,9 @@ function RecruitApp() {
         setSaved([]);
         setSelectedSchoolId("");
         window.localStorage.setItem("vr-profile-schema", PROFILE_SCHEMA_VERSION);
+        const cleanUrl = new URL(window.location.href);
+        cleanUrl.searchParams.delete("fresh");
+        window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
         return;
       }
       if (demoMode) {
