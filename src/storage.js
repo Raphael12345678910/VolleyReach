@@ -63,23 +63,44 @@ export function useStoredState(key, fallback) {
   const defaults = useRef(fallback);
   const [value, setValue] = useState(() => read(key, fallback));
   const latest = useRef(value);
+  const unsaved = useRef(false);
 
   const update = useCallback((action) => {
     const next = typeof action === "function" ? action(latest.current) : action;
     latest.current = next;
     setValue(next);
-    persistValue(key, next);
+    unsaved.current = !persistValue(key, next);
   }, [key]);
 
   useEffect(() => {
-    const receive = (event) => {
-      if (event.storageArea !== window.localStorage || (event.key !== key && event.key !== null)) return;
-      const next = read(key, defaults.current);
-      latest.current = next;
-      setValue(next);
+    const synchronize = () => {
+      if (unsaved.current) return;
+      try {
+        const raw = window.localStorage.getItem(key);
+        const parsed = raw === null ? defaults.current : JSON.parse(raw);
+        const next = key.endsWith("outreach") ? normalizeOutreach(parsed) : normalizeStoredValue(parsed, defaults.current);
+        latest.current = next;
+        setValue(next);
+      } catch {
+        // Keep the current form when browser storage becomes unavailable.
+      }
     };
+    const receive = (event) => {
+      if (event.key === key || event.key === null) synchronize();
+    };
+    const updateStatus = (event) => { if (event.detail.key === key) unsaved.current = !event.detail.saved; };
     window.addEventListener("storage", receive);
-    return () => window.removeEventListener("storage", receive);
+    window.addEventListener("vr-storage-status", updateStatus);
+    window.addEventListener("focus", synchronize);
+    window.addEventListener("pageshow", synchronize);
+    // Catch updates made by another tab before the listeners were attached.
+    synchronize();
+    return () => {
+      window.removeEventListener("storage", receive);
+      window.removeEventListener("vr-storage-status", updateStatus);
+      window.removeEventListener("focus", synchronize);
+      window.removeEventListener("pageshow", synchronize);
+    };
   }, [key]);
 
   return [value, update];

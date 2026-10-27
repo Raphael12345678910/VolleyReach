@@ -175,6 +175,8 @@ test("blocked storage warns clearly and keeps the current form usable", async ({
   await page.getByRole("button", { name: "Save profile", exact: true }).click();
   await expect(page.getByRole("button", { name: "Saved", exact: true })).toHaveCount(0);
   await expect(page.locator("#name")).toHaveValue("Unsaved Athlete");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(page.locator("#name")).toHaveValue("Unsaved Athlete");
 });
 
 test("same-browser tabs receive saved profile updates", async ({ page, context }) => {

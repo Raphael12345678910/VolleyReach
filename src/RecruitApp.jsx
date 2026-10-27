@@ -876,7 +876,14 @@ function RecruitApp() {
     }).catch((error) => { if (error.name !== "AbortError") setDirectory((current) => ({ ...current, loading: false, error: true })); });
     return () => controller.abort();
   }, [directoryAttempt]);
-  useEffect(() => { const handler = () => setActive(routeFromHash()); window.addEventListener("hashchange", handler); window.addEventListener("popstate", handler); return () => { window.removeEventListener("hashchange", handler); window.removeEventListener("popstate", handler); }; }, []);
+  useEffect(() => {
+    const handler = () => setActive(routeFromHash());
+    window.addEventListener("hashchange", handler);
+    window.addEventListener("popstate", handler);
+    // A fast hash navigation can happen before the first effect subscribes.
+    handler();
+    return () => { window.removeEventListener("hashchange", handler); window.removeEventListener("popstate", handler); };
+  }, []);
   useEffect(() => {
     if (!menuOpen) return;
     const closeOnEscape = (event) => {

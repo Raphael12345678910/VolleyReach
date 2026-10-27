@@ -4,6 +4,7 @@
 
 - Shared links and older profile schema markers no longer clear returning visitors' progress.
 - Profile edits save synchronously, receive updates from other tabs, and tolerate malformed stored values.
+- Fast startup navigation and second-tab updates are rechecked after event subscriptions; unsaved form data is retained if browser storage is unavailable.
 - Demo profiles, school lists, quiz answers and email notes are isolated from the normal workspace.
 - Storage failures are visible; a failed write never produces a successful manual save confirmation.
 - Downloadable progress backups can be restored after a confirmation, including on another browser or device.
