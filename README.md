@@ -13,7 +13,7 @@ Read the full [`THOUGHT_PROCESS_REPORT.md`](THOUGHT_PROCESS_REPORT.md) for the p
 - **Home** shows profile completion, saved programs, sent-email totals, and useful next actions.
 - **Find Schools** asks four questions that directly filter the real directory by division, region, contact availability, and list size.
 - **College Directory** contains 293 programs and 722 grouped coach/contact entries imported from the shared men's volleyball contact sheet.
-- **My Profile** stores personal, athletic, academic, film, coach-contact, and optional schedule information.
+- **My Profile** automatically saves personal, athletic, academic, film, coach-contact, and optional schedule information in the visitor's own browser. Progress can also be downloaded as a backup and restored on another device.
 - **Email Builder** unlocks after the required profile steps are complete, then uses those facts, current coach names, and a required school-research field to generate a personal recruiting email.
 - **Outreach** tracks saved programs, status, sent emails, follow-up dates, and replies.
 - **Recruiting Plan** turns the workflow into a realistic junior-year sequence.
@@ -60,11 +60,23 @@ The jump demo uses manual visual calibration rather than claiming automatic comp
 1. Choose either a men's volleyball net (7 ft 11 5/8 in) or a regulation basketball rim (10 ft) as the known-height reference.
 2. Record square to the reference so its top edge appears level, with the athlete safely beside it in the same visual plane.
 3. Keep the phone fixed, show the full body and floor, record a maximum standing reach, and then record the jump without zooming.
-4. Upload the clip and mark the floor plus the top of the selected reference.
-5. Pause on the correct frames and mark standing reach and peak touch.
-6. Convert the pixel differences into inches.
+4. Upload one video and mark the floor plus two points along the top tape or rim edge.
+5. Pause on the correct frames and mark standing and peak fingertips. Use frame stepping and pixel-level adjustment to refine the points.
+6. Correct camera roll using the reference line, then convert the calibrated differences into inches.
+7. Confirm the recording conditions, add repeated trials, and save a consistent median result to the athletic profile.
 
-The app supports the men's 7 ft 11 5/8 in net height and a regulation 10 ft basketball rim. It deliberately labels accuracy as **validation pending**. Benchmark at least 10 same-day trials against a Vertec before publishing an error range.
+The app supports the men's 7 ft 11 5/8 in net height and a regulation 10 ft basketball rim. Example imagery cannot be saved as a real measurement. The setup score is a recording checklist, not a measured accuracy percentage. A single camera does not recover true 3D depth; the athlete and reference must be at the same distance from the camera. Benchmark at least 10 same-day trials against a Vertec before publishing an error range.
+
+## Saving Progress
+
+Email sign-in is not required. Profile details, outreach, selected schools, quiz answers and school-specific email notes save immediately to the current browser. Returning through a shared link preserves that progress. Demo mode uses separate storage for every category.
+
+- Browser tabs on the same device receive saved updates.
+- My Profile includes **Back up** and **Restore** for moving a copy between browsers or devices.
+- Backups contain athlete and coach contact details and should be kept private.
+- Blocked or full browser storage produces a visible warning instead of a false save confirmation.
+- Private browsing, clearing browser data, or changing browser/device can remove access to local progress. There is no cloud account recovery.
+- Uploaded clips stay in the current tab; only measurements explicitly saved to the profile persist.
 
 ## User Testing and Evaluation
 
@@ -105,13 +117,26 @@ npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Open `http://127.0.0.1:3000/VolleyReach/` (or the address Vite prints if that port is already in use).
 
 Create a production build with:
 
 ```bash
 npm run build
 ```
+
+## Verification
+
+```bash
+npm test
+npm run build
+npx playwright install chromium webkit
+PLAYWRIGHT_CHROMIUM_CHANNEL=chromium npm run test:e2e
+```
+
+The browser suite checks profiles, sharing, returning visitors, demo isolation, email generation and copying, schedule edits, school search and pagination, quiz results, outreach logging and undo, backup/restore, blocked/corrupt storage, directory retries, responsive layouts, keyboard navigation, and actual video upload/measurement. It runs against desktop Chromium, phone-sized Chromium, and phone-sized WebKit. The tests use synthetic athlete information; the video fixture tests interactions, not athletic accuracy.
+
+GitHub Actions repeats the checks for changes to `main` and pull requests. The current release notes are in [`RELEASE_CHECKS.md`](RELEASE_CHECKS.md).
 
 ## Project Structure
 

@@ -9,10 +9,9 @@ export function median(values) {
 
 export function calculateJumpMeasurement(markers, referenceHeight, frame = {}) {
   const required = ["floor", "referenceLeft", "referenceRight", "standing", "peak"];
-  if (required.some((key) => !markers[key])) return null;
+  if (!Number.isFinite(referenceHeight) || referenceHeight <= 0 || required.some((key) => !markers[key] || !Number.isFinite(markers[key].x) || !Number.isFinite(markers[key].y))) return null;
 
-  const left = markers.referenceLeft;
-  const right = markers.referenceRight;
+  const [left, right] = [markers.referenceLeft, markers.referenceRight].sort((a, b) => a.x - b.x);
   const horizontalRun = right.x - left.x;
   if (Math.abs(horizontalRun) < 0.025) return null;
 
@@ -69,10 +68,18 @@ export function evaluateJumpSetup(measurement, setup, fps) {
   if (measurement.tiltDegrees <= 2) score += 5;
   else if (measurement.tiltDegrees <= 5) score += 2;
   else warnings.push("The reference is heavily tilted. Re-record with the phone level if possible.");
-  if (!measurement.insideReference) warnings.push("Keep the athlete between, or very close to, the two calibration points.");
+  if (!measurement.insideReference) { score -= 10; warnings.push("Keep the athlete between, or very close to, the two calibration points."); }
   if (!measurement.validRange) warnings.push("The result is outside a typical range. Recheck the standing and peak fingertip markers.");
 
   score = clamp(score, 0, 100);
+  if (!setup.samePlane || !setup.cameraStill || !setup.squareCamera || !measurement.validRange) score = Math.min(score, 59);
   const risk = score >= 85 && measurement.validRange ? "low" : score >= 65 && measurement.validRange ? "medium" : "high";
   return { score, label: risk === "low" ? "Strong setup" : risk === "medium" ? "Usable setup" : "Retake recommended", risk, warnings };
+}
+
+export function summarizeJumpTrials(trials) {
+  if (!trials.length) return null;
+  const vertical = median(trials.map((trial) => trial.vertical));
+  const stand = median(trials.map((trial) => trial.stand));
+  return { vertical, stand, peak: stand + vertical };
 }
