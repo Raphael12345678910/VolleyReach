@@ -27,13 +27,18 @@ import {
   Menu,
   MessageSquareText,
   PenLine,
+  Pause,
+  Play,
   Plus,
   RotateCcw,
   Ruler,
   Search,
   Send,
   ShieldCheck,
+  SkipBack,
+  SkipForward,
   Target,
+  Trash2,
   Trophy,
   Upload,
   UserRound,
@@ -42,6 +47,7 @@ import {
   Volleyball,
   X
 } from "lucide-react";
+import { calculateJumpMeasurement, evaluateJumpSetup, median } from "./jumpMath";
 
 const MAIN_NAV = [
   { id: "home", label: "Home", icon: Home },
@@ -593,54 +599,119 @@ function TimelinePage({ navigate }) {
 
 function JumpPage({ profile, setProfile }) {
   const fileInput = useRef(null);
+  const videoRef = useRef(null);
   const [mediaUrl, setMediaUrl] = useState("");
-  const [markers, setMarkers] = useState({ floor: .94, reference: .42, standing: .41, peak: .22 });
+  const [markers, setMarkers] = useState({
+    floor: { x: .56, y: .94 },
+    referenceLeft: { x: .18, y: .43 },
+    referenceRight: { x: .82, y: .435 },
+    standing: { x: .56, y: .39 },
+    peak: { x: .56, y: .18 }
+  });
+  const [markerTimes, setMarkerTimes] = useState({});
   const [placing, setPlacing] = useState("");
   const [referenceType, setReferenceType] = useState("net");
+  const [videoState, setVideoState] = useState({ duration: 0, time: 0, width: 1280, height: 720, playing: false });
+  const [fps, setFps] = useState(60);
+  const [setup, setSetup] = useState({ cameraStill: true, squareCamera: true, samePlane: true, fullBody: true });
+  const [trials, setTrials] = useState([]);
   const referenceOptions = {
     net: {
       height: 95.625,
       shortLabel: "Men's net: 7 ft 11 5/8 in",
-      markerLabel: "Top of net",
-      title: "Estimate reach from a straight-on net clip.",
-      description: "Record the athlete and net in the same plane so the known net height can scale the athlete's reach."
+      markerLabel: "net tape",
+      title: "Measure reach from one controlled jump clip.",
+      description: "Frame stepping, tilt correction and repeated trials make the estimate easier to place and more consistent."
     },
     rim: {
       height: 120,
       shortLabel: "Basketball rim: 10 ft",
-      markerLabel: "Top of rim",
+      markerLabel: "rim edge",
       title: "Estimate reach beside a basketball rim.",
-      description: "Use the regulation 10-foot rim as the known height, with the athlete and rim edge in the same plane."
+      description: "Use the regulation 10-foot rim as the known height, with the athlete safely beside its outer edge."
     }
   };
   const referenceConfig = referenceOptions[referenceType];
   const reference = referenceConfig.height;
   useEffect(() => () => { if (mediaUrl) URL.revokeObjectURL(mediaUrl); }, [mediaUrl]);
-  const result = useMemo(() => { const span = Math.abs(markers.floor - markers.reference); if (!span) return null; const scale = reference / span; const stand = Math.abs(markers.floor - markers.standing) * scale; const peak = Math.abs(markers.floor - markers.peak) * scale; return { stand, peak, vertical: peak - stand }; }, [markers, reference]);
-  const place = (event) => { if (!placing) return; const rect = event.currentTarget.getBoundingClientRect(); setMarkers((current) => ({ ...current, [placing]: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)) })); setPlacing(""); };
-  const upload = (event) => { const file = event.target.files?.[0]; if (!file) return; if (mediaUrl) URL.revokeObjectURL(mediaUrl); setMediaUrl(URL.createObjectURL(file)); };
+  const result = useMemo(() => calculateJumpMeasurement(markers, reference, videoState), [markers, reference, videoState.width, videoState.height]);
+  const quality = useMemo(() => evaluateJumpSetup(result, setup, fps), [result, setup, fps]);
+  const recommended = useMemo(() => {
+    if (!trials.length) return result ? { vertical: result.vertical, stand: result.standingTouch, peak: result.peakTouch } : null;
+    return {
+      vertical: median(trials.map((trial) => trial.vertical)),
+      stand: median(trials.map((trial) => trial.stand)),
+      peak: median(trials.map((trial) => trial.peak))
+    };
+  }, [result, trials]);
+  const markerOrder = ["floor", "referenceLeft", "referenceRight", "standing", "peak"];
+  const place = (event) => {
+    if (!placing) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const point = {
+      x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+      y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
+    };
+    if (videoRef.current) videoRef.current.pause();
+    setMarkers((current) => ({ ...current, [placing]: point }));
+    setMarkerTimes((current) => ({ ...current, [placing]: videoState.time }));
+    const next = markerOrder[markerOrder.indexOf(placing) + 1];
+    setPlacing(next || "");
+  };
+  const upload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (mediaUrl) URL.revokeObjectURL(mediaUrl);
+    setMediaUrl(URL.createObjectURL(file));
+    setMarkers({});
+    setMarkerTimes({});
+    setTrials([]);
+    setSetup({ cameraStill: false, squareCamera: false, samePlane: false, fullBody: false });
+    setPlacing("floor");
+  };
+  const seek = (seconds) => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.pause();
+    video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + seconds));
+  };
+  const togglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) video.play(); else video.pause();
+  };
+  const resetMarkers = () => { setMarkers({}); setMarkerTimes({}); setTrials([]); setPlacing("floor"); };
   const save = () => {
-    if (!result) return;
-    setProfile((current) => ({ ...current, standingReach: `${result.stand.toFixed(1)}\"`, approachTouch: `${result.peak.toFixed(1)}\"`, vertical: `${result.vertical.toFixed(1)}\"` }));
+    if (!recommended) return;
+    setProfile((current) => ({ ...current, standingReach: `${recommended.stand.toFixed(1)}\"`, approachTouch: `${recommended.peak.toFixed(1)}\"`, vertical: `${recommended.vertical.toFixed(1)}\"` }));
+  };
+  const addTrial = () => {
+    if (!result || !result.validRange) return;
+    setTrials((current) => [...current, { id: Date.now(), vertical: result.vertical, stand: result.standingTouch, peak: result.peakTouch }]);
+    setMarkers((current) => { const { peak: _peak, ...rest } = current; return rest; });
+    setPlacing("peak");
   };
   const selectReference = (type) => {
     setReferenceType(type);
     setMarkers((current) => {
-      const { reference: _previousReference, ...remaining } = current;
+      const { referenceLeft: _left, referenceRight: _right, ...remaining } = current;
       return remaining;
     });
-    setPlacing("reference");
+    setTrials([]);
+    setPlacing("referenceLeft");
   };
-  const labels = { floor: "Floor", reference: referenceConfig.markerLabel, standing: "Standing reach", peak: "Peak touch" };
-  const markerHelp = [
-    ["floor", "Pause while standing. Click the court directly under the feet."],
-    ["reference", referenceType === "net" ? "Click the top white tape beside the athlete, not farther down the net." : "Click the top edge of the rim beside the athlete. Regulation rim height is 10 feet."],
-    ["standing", "Pause at the highest standing reach and click the fingertips."],
-    ["peak", "Pause at the jump apex and click the highest fingertips."]
-  ];
+  const labels = { floor: "Floor at feet", referenceLeft: `Left ${referenceConfig.markerLabel}`, referenceRight: `Right ${referenceConfig.markerLabel}`, standing: "Standing fingertips", peak: "Peak fingertips" };
+  const instructions = {
+    floor: "Pause while standing and click the court directly between the athlete's feet.",
+    referenceLeft: `Click the ${referenceConfig.markerLabel} on the left side of the athlete.`,
+    referenceRight: `Click the same ${referenceConfig.markerLabel} on the right. This lets VolleyReach correct camera roll.`,
+    standing: "Scrub to the full standing reach, then click the highest fingertip.",
+    peak: "Step through the jump one frame at a time, then click the fingertip at its highest frame."
+  };
+  const formatTime = (seconds) => `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(2).padStart(5, "0")}`;
 
   return <div className="r-page">
-    <PageHeader eyebrow="Optional tool" title={referenceConfig.title} description={referenceConfig.description} action={<Tag tone="blue"><ShieldCheck size={13} /> Beta estimate</Tag>} />
+    <PageHeader eyebrow="Jump Test · Beta" title={referenceConfig.title} description={referenceConfig.description} action={<Tag tone="blue"><ShieldCheck size={13} /> Setup-aware estimate</Tag>} />
     <section className="r-reference-picker" aria-label="Calibration reference">
       <div><p className="r-eyebrow">Choose your reference</p><strong>What known-height object is visible?</strong></div>
       <div className="r-reference-options">
@@ -651,7 +722,7 @@ function JumpPage({ profile, setProfile }) {
     <section className="r-recording-guide">
       <div className="r-recording-title"><Video size={20} /><div><p className="r-eyebrow">Before recording</p><h2>Keep the {referenceType === "net" ? "net" : "rim"} level and the camera still.</h2></div></div>
       <div className="r-recording-steps">
-        <span><strong>1. Square the camera</strong><small>{referenceType === "net" ? "Use a level phone at 1x and face the net straight on. Move until the top tape looks level, not tilted." : "Use a level phone at 1x from the side of the basket. Move back until the rim edge looks level, not tilted."}</small></span>
+        <span><strong>1. Square the camera</strong><small>{referenceType === "net" ? "Use 1x zoom and face the net straight on. Keep the phone level and the top tape nearly horizontal." : "Use 1x zoom from the side of the basket. Keep the phone level and the rim edge nearly horizontal."}</small></span>
         <span><strong>2. Match the plane</strong><small>{referenceType === "net" ? "Stand directly beside the net at the same distance from the camera as the tape." : "Stand safely beside the outer rim edge at the same distance from the camera. Do not jump under the basket."}</small></span>
         <span><strong>3. Record one sequence</strong><small>Show the full body and floor, reach as high as possible, then jump without moving or zooming the phone.</small></span>
       </div>
@@ -659,20 +730,26 @@ function JumpPage({ profile, setProfile }) {
     <div className="r-jump-layout">
       <section className="r-jump-stage-panel">
         <div className="r-jump-toolbar">
-          <div className="r-jump-upload"><Button variant="dark" icon={Upload} onClick={() => fileInput.current?.click()}>Upload clip</Button><input hidden ref={fileInput} type="file" accept="video/*" onChange={upload} /><span><Info size={13} /><strong>Reminder:</strong> set all four markers</span></div>
+          <div className="r-jump-upload"><Button variant="dark" icon={Upload} onClick={() => fileInput.current?.click()}>Upload clip</Button><input hidden ref={fileInput} type="file" accept="video/*" onChange={upload} /><span><Target size={13} /><strong>{Object.keys(markers).length}/5</strong> markers placed</span></div>
           <span className="r-reference-chip"><Ruler size={14} /> {referenceConfig.shortLabel}</span>
         </div>
-        <div className={`r-jump-stage ${placing ? "placing" : ""}`} onClick={place}>
-          {mediaUrl ? <video src={mediaUrl} controls /> : <img src={publicUrl("assets/jump-lab-demo.jpg")} alt="Straight-on jump measurement sample beside a volleyball net" />}
-          {Object.entries(markers).map(([key, y]) => <span key={key} className={`r-jump-marker ${key}`} style={{ top: `${y * 100}%` }}><small>{labels[key]}</small></span>)}
-          {placing ? <div className="r-place-prompt">Pause on the right frame, then click the {labels[placing].toLowerCase()}</div> : null}
+        <div className={`r-jump-stage ${placing ? "placing" : ""}`} style={{ aspectRatio: `${videoState.width} / ${videoState.height}` }} onClick={place}>
+          {mediaUrl ? <video ref={videoRef} src={mediaUrl} playsInline preload="metadata" onLoadedMetadata={(event) => setVideoState((current) => ({ ...current, duration: event.currentTarget.duration, width: event.currentTarget.videoWidth, height: event.currentTarget.videoHeight }))} onTimeUpdate={(event) => setVideoState((current) => ({ ...current, time: event.currentTarget.currentTime }))} onPlay={() => setVideoState((current) => ({ ...current, playing: true }))} onPause={() => setVideoState((current) => ({ ...current, playing: false }))} /> : <img src={publicUrl("assets/jump-lab-demo.jpg")} alt="Straight-on jump measurement sample beside a volleyball net" />}
+          {markers.referenceLeft && markers.referenceRight ? <svg className="r-calibration-line" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><line x1={markers.referenceLeft.x * 100} y1={markers.referenceLeft.y * 100} x2={markers.referenceRight.x * 100} y2={markers.referenceRight.y * 100} /></svg> : null}
+          {Object.entries(markers).map(([key, point]) => <span key={key} className={`r-jump-point ${key}`} style={{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }}><i /><small>{labels[key]}</small></span>)}
+          {placing ? <div className="r-place-prompt">Click: {labels[placing]}</div> : null}
         </div>
-        <div className="r-marker-guide"><Target size={18} /><span><strong>Set the markers after uploading</strong><small>Select a marker below, pause on the correct frame, then click that exact point in the video.</small></span></div>
-        <div className="r-marker-buttons">{Object.keys(labels).map((key) => <button className={placing === key ? "active" : ""} onClick={() => setPlacing(key)} key={key}><CheckCircle2 size={16} /><span><strong>{labels[key]}</strong><small>{placing === key ? "Now click the video" : "Select marker"}</small></span></button>)}</div>
-        <div className="r-marker-help">{markerHelp.map(([key, detail]) => <div key={key}><strong>{labels[key]}</strong><p>{detail}</p></div>)}</div>
+        {mediaUrl ? <div className="r-video-controls"><button aria-label={videoState.playing ? "Pause" : "Play"} onClick={togglePlayback}>{videoState.playing ? <Pause size={16} /> : <Play size={16} />}</button><button aria-label="Previous frame" onClick={() => seek(-1 / Number(fps || 60))}><SkipBack size={16} /></button><button aria-label="Next frame" onClick={() => seek(1 / Number(fps || 60))}><SkipForward size={16} /></button><input aria-label="Video timeline" type="range" min="0" max={videoState.duration || 0} step="0.001" value={videoState.time} onChange={(event) => { if (videoRef.current) { videoRef.current.pause(); videoRef.current.currentTime = Number(event.target.value); } }} /><span>{formatTime(videoState.time)} / {formatTime(videoState.duration)}</span><label>FPS <select value={fps} onChange={(event) => setFps(Number(event.target.value))}><option>30</option><option>60</option><option>120</option><option>240</option></select></label></div> : null}
+        <div className="r-marker-guide"><Target size={18} /><span><strong>{placing ? labels[placing] : "All markers placed"}</strong><small>{placing ? instructions[placing] : "Review each point or add this measurement as a trial."}</small></span>{Object.keys(markers).length ? <IconButton label="Clear all markers" onClick={resetMarkers}><RotateCcw size={15} /></IconButton> : null}</div>
+        <div className="r-marker-buttons five">{markerOrder.map((key, index) => <button className={`${placing === key ? "active" : ""} ${markers[key] ? "complete" : ""}`} onClick={() => { if (videoRef.current) videoRef.current.pause(); setPlacing(key); }} key={key}><span className="r-marker-step">{markers[key] ? <Check size={13} /> : index + 1}</span><span><strong>{labels[key]}</strong><small>{markerTimes[key] !== undefined ? `Set at ${formatTime(markerTimes[key])}` : placing === key ? "Click the video" : "Not placed"}</small></span></button>)}</div>
       </section>
-      <aside className="r-jump-result"><p className="r-eyebrow">Estimated vertical</p><strong>{result ? result.vertical.toFixed(1) : "—"}</strong><span>inches</span><Tag tone="coral">Validation pending</Tag><div><span>Standing reach<strong>{result ? `${result.stand.toFixed(1)} in` : "—"}</strong></span><span>Peak touch<strong>{result ? `${result.peak.toFixed(1)} in` : "—"}</strong></span></div><Button icon={Clipboard} onClick={save} disabled={!result}>Save to athletic profile</Button><p><Info size={14} /> Benchmark at least 10 same-day trials against a Vertec before publishing an accuracy range.</p></aside>
+      <aside className="r-jump-sidebar">
+        <section className="r-jump-result"><div className="r-result-heading"><span><p className="r-eyebrow">{trials.length ? `Median of ${trials.length} trial${trials.length === 1 ? "" : "s"}` : "Current estimate"}</p><strong>{recommended ? recommended.vertical.toFixed(1) : "—"}<small> in</small></strong></span><Tag tone={quality.risk === "low" ? "green" : quality.risk === "medium" ? "wood" : "coral"}>{quality.score}/100 setup</Tag></div><div className="r-touch-results"><span>Standing reach<strong>{recommended ? `${recommended.stand.toFixed(1)} in` : "—"}</strong></span><span>Peak touch<strong>{recommended ? `${recommended.peak.toFixed(1)} in` : "—"}</strong></span></div><Button variant="secondary" icon={Plus} onClick={addTrial} disabled={!result?.validRange}>Add as trial</Button><Button icon={Clipboard} onClick={save} disabled={!recommended}>Save to athletic profile</Button></section>
+        <section className="r-quality-panel"><div className="r-quality-head"><span><p className="r-eyebrow">Recording check</p><strong>{quality.label}</strong></span><span className={`r-quality-score ${quality.risk}`}>{quality.score}</span></div>{[["squareCamera", "Camera faces the jump plane straight on"], ["cameraStill", "Phone stayed still and zoom did not change"], ["samePlane", `Athlete and ${referenceType === "net" ? "net tape" : "rim edge"} are the same distance from camera`], ["fullBody", "Floor, feet, fingertips and reference are visible"]].map(([key, label]) => <label className="r-quality-check" key={key}><input type="checkbox" checked={setup[key]} onChange={(event) => setSetup((current) => ({ ...current, [key]: event.target.checked }))} /><span>{setup[key] ? <Check size={12} /> : null}</span>{label}</label>)}{quality.warnings.slice(0, 2).map((warning) => <p className="r-quality-warning" key={warning}><Info size={13} />{warning}</p>)}<p className="r-depth-note"><ShieldCheck size={14} /><span><strong>About depth</strong>One camera cannot measure true 3D depth. The same-plane setup removes most of that error; the two reference points correct phone tilt only.</span></p></section>
+        {trials.length ? <section className="r-trial-panel"><div><p className="r-eyebrow">Saved trials</p><button onClick={() => setTrials([])}>Clear</button></div>{trials.map((trial, index) => <span key={trial.id}><b>{index + 1}</b><strong>{trial.vertical.toFixed(1)} in</strong><button aria-label={`Remove trial ${index + 1}`} onClick={() => setTrials((current) => current.filter((item) => item.id !== trial.id))}><Trash2 size={13} /></button></span>)}</section> : null}
+      </aside>
     </div>
+    <p className="r-jump-method"><Info size={14} /> The result is a video estimate, not a medical or officially verified measurement. For an accuracy study, compare at least 10 same-day trials against a Vertec or jump mat.</p>
   </div>;
 }
 
