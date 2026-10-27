@@ -695,10 +695,13 @@ function RecruitApp() {
   useEffect(() => {
     try {
       if (freshMode) {
-        setProfile(DEFAULT_PROFILE);
-        setSaved([]);
-        setSelectedSchoolId("");
-        window.localStorage.setItem("vr-profile-schema", PROFILE_SCHEMA_VERSION);
+        if (window.localStorage.getItem("vr-share-initialized") !== "1") {
+          setProfile(DEFAULT_PROFILE);
+          setSaved([]);
+          setSelectedSchoolId("");
+          window.localStorage.setItem("vr-profile-schema", PROFILE_SCHEMA_VERSION);
+          window.localStorage.setItem("vr-share-initialized", "1");
+        }
         const cleanUrl = new URL(window.location.href);
         cleanUrl.searchParams.delete("fresh");
         window.history.replaceState({}, "", `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`);
