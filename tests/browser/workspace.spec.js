@@ -17,6 +17,7 @@ async function seed(page, data = {}) {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.context().route("**/site-config.json", (route) => route.fulfill({ json: {} }));
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.__errors = errors;
@@ -33,6 +34,7 @@ test("new visitor starts blank, typing saves immediately, and share links preser
   await page.goto("?fresh=1#/profile");
   await expect(page.locator("#name")).toHaveValue("Alex Rivera");
   const other = await browser.newContext();
+  await other.route("**/site-config.json", (route) => route.fulfill({ json: {} }));
   const otherPage = await other.newPage();
   await otherPage.goto(page.url());
   await expect(otherPage.locator("#name")).toHaveValue("");
@@ -156,6 +158,7 @@ test("backup and restore preserve all progress across browser contexts", async (
   const download = await downloadPromise;
   const buffer = await readFile(await download.path());
   const other = await browser.newContext();
+  await other.route("**/site-config.json", (route) => route.fulfill({ json: {} }));
   const target = await other.newPage();
   await target.goto(page.url());
   await target.locator('.r-progress-tools input[type="file"]').setInputFiles({ name: "progress.json", mimeType: "application/json", buffer });

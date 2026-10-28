@@ -1,4 +1,34 @@
-# Release Check: October 27, 2026
+# Release Check: October 28, 2026
+
+## Added
+
+- An original, responsive VolleyReach landing page using the project's own volleyball imagery and brand. Root links open the landing page; existing recruiting deep links still work.
+- Supabase email/password sign-up, confirmation, sign-in, password recovery, and configurable Google/Apple OAuth using PKCE.
+- Separate storage for each account, browser-only visitors, and demo athletes. Browser progress is imported only after explicit confirmation. Demo pages cannot perform real account actions.
+- Private cloud workspace schema with row-level security and version-checked saves, plus recovery for interrupted/offline saves, concurrent device edits, and blocked recovery-checkpoint writes.
+- Truthful local/cloud save states, backup/restore, account sign-out and confirmed workspace deletion.
+- Consent-gated Google Analytics with allowlisted event data for page views, controls, searches, contact views, email copies, saved schools, profile milestones and authentication actions. No profile values, generated email text, raw search strings, passwords or auth codes are sent by the instrumentation.
+- Demo activity, declined consent, Global Privacy Control and Do Not Track are excluded. Cookie settings are accessible from both the landing page and workspace.
+- Coach-address copy controls and tracking that distinguishes successful clipboard writes, failures and manually logged outreach.
+- Privacy/terms disclosures, a service-activation guide, optional GitHub publishing workflow and build-time rejection of non-public Supabase keys.
+
+## Verification Scope
+
+The suite now contains 13 unit checks and 123 browser workflow checks across desktop Chrome, phone-sized Chrome and phone-sized WebKit. It covers the previous recruiting workflows as well as account separation, password reset callbacks, provider redirects, cloud-save recovery and privacy choices. Production builds, responsive screenshots and the dependency audit are also checked. GitHub Actions runs the final source; its run is the release verification record.
+
+The account tests use the official Supabase client against a controlled mock service. No real provider account, SMTP sender, deployed database policy or Analytics reporting property has been configured for this release. See `SETUP_ACCOUNTS_AND_ANALYTICS.md` for activation and real-service acceptance checks. A passing test suite is not a promise of zero possible bugs or a legal/security certification.
+
+## Activation and Remaining Limits
+
+- Public configuration is blank. Analytics does not collect data yet, and real accounts are visibly unavailable. Browser-only recruiting and saving continue to work.
+- Account activation needs a Supabase project, the supplied SQL schema, correct redirect URLs, email confirmation and a production SMTP sender. Google/Apple require their provider setup; Apple also requires ongoing web-secret renewal.
+- Live row-level isolation, external email delivery, OAuth consent and GA reporting must be verified after those services are connected.
+- Declined consent, browser privacy signals, ad blockers and connection failures mean Analytics cannot count every visitor or action.
+- Contact freshness, matching limitations and unvalidated single-view jump estimates remain as described below. Accounts do not make video estimates more accurate or turn school filters into recruiting predictions.
+
+## Previous Release: October 27, 2026
+
+The following records the earlier browser-only release and its then-current limitations.
 
 ## Fixed
 

@@ -2,7 +2,7 @@
 
 VolleyReach is a men's volleyball recruiting workspace. Athletes build one complete profile, find real college programs, write school-specific coach emails, and track outreach without needing a paid recruiting platform.
 
-The current build is a polished interactive prototype designed for testing with athletes and teams.
+The current build includes a public landing page and a recruiting workspace, with optional Supabase accounts and Google Analytics ready to connect. See [`SETUP_ACCOUNTS_AND_ANALYTICS.md`](SETUP_ACCOUNTS_AND_ANALYTICS.md) for owner setup and live-service checks.
 
 **Live site:** https://raphael12345678910.github.io/VolleyReach/
 
@@ -10,6 +10,9 @@ Read the full [`THOUGHT_PROCESS_REPORT.md`](THOUGHT_PROCESS_REPORT.md) for the p
 
 ## Current Experience
 
+- **Landing page** introduces VolleyReach with original branding and volleyball imagery; existing `#/home`, `#/directory` and other shared app links still open the workspace directly.
+- **Accounts** support email/password, confirmation, recovery, and optional Google/Apple through Supabase once configured. Signed-in workspaces use private per-user cloud rows with conflict-aware saving. Unconfigured services are explicitly unavailable, never simulated.
+- **Optional analytics** records safe action counts only after consent: visits, college search, coach-contact views, copies, saved schools and other milestones. Demo visits and browser privacy signals are excluded. Profile fields and email text are not sent.
 - **Home** shows profile completion, saved programs, sent-email totals, and useful next actions.
 - **Find Schools** asks four questions that directly filter the real directory by division, region, contact availability, and list size.
 - **College Directory** contains 293 programs and 722 grouped coach/contact entries imported from the shared men's volleyball contact sheet.
@@ -69,13 +72,15 @@ The app supports the men's 7 ft 11 5/8 in net height and a regulation 10 ft bask
 
 ## Saving Progress
 
-Email sign-in is not required. Profile details, outreach, selected schools, quiz answers and school-specific email notes save immediately to the current browser. Returning through a shared link preserves that progress. Demo mode uses separate storage for every category.
+Email sign-in is not required for browser-only use. Profile details, outreach, selected schools, quiz answers and school-specific email notes save immediately to the current browser. Returning through a shared link preserves that progress. Demo mode uses separate storage for every category.
+
+When Supabase is configured, email/password and enabled social providers let athletes save to an account across devices. Account storage is separated by user ID, and browser-only progress is imported only after confirmation in My account. Conflicting device edits ask which copy to keep and offer a backup. Offline edits remain pending and retry when connected. Cloud-loading failures block editing rather than risking an overwrite.
 
 - Browser tabs on the same device receive saved updates.
 - My Profile includes **Back up** and **Restore** for moving a copy between browsers or devices.
 - Backups contain athlete and coach contact details and should be kept private.
 - Blocked or full browser storage produces a visible warning instead of a false save confirmation.
-- Private browsing, clearing browser data, or changing browser/device can remove access to local progress. There is no cloud account recovery.
+- Private browsing, clearing browser data, or changing browser/device can remove access to browser-only progress. Configured accounts add email recovery and cloud saves; without a connected service there is no cloud recovery.
 - Uploaded clips stay in the current tab; only measurements explicitly saved to the profile persist.
 
 ## User Testing and Evaluation
@@ -107,6 +112,8 @@ The first pilot targets 20 athletes, 12 completed profiles, 60 saved programs, 2
 - Framer Motion
 - Lucide icons
 - Local browser storage for prototype data
+- Supabase Auth and Postgres with per-user row-level security (requires owner configuration)
+- Consent-gated Google Analytics 4 (requires a Measurement ID)
 
 The volleyball imagery in `public/assets/` was created specifically for this project. The interface does not copy My Recruit Path branding, layout, or text.
 

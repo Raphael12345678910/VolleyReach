@@ -53,6 +53,10 @@ import {
 import { calculateJumpMeasurement, evaluateJumpSetup, summarizeJumpTrials } from "./jumpMath";
 import { parseProgressBackup, persistValue, useStoredState } from "./storage";
 import { profileFieldIssue } from "./profileValidation";
+import { useAuth } from "./auth";
+import { trackEvent } from "./analytics";
+import AccountPage, { workspaceKeys } from "./AccountPage";
+import { useWorkspaceSync } from "./workspaceSync";
 
 const MAIN_NAV = [
   { id: "home", label: "Home", icon: Home },
@@ -65,7 +69,7 @@ const MAIN_NAV = [
 ];
 
 const TOOL_NAV = [{ id: "jump", label: "Jump Test", icon: Activity }];
-const ROUTES = [...MAIN_NAV, ...TOOL_NAV].map((item) => item.id);
+const ROUTES = [...MAIN_NAV, ...TOOL_NAV].map((item) => item.id).concat("account");
 const publicUrl = (path) => `${import.meta.env.BASE_URL}${path.replace(/^\/+/, "")}`;
 
 const DEFAULT_PROFILE = {
@@ -338,7 +342,7 @@ function SkipLink() {
   return <a className="r-skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById("main-content")?.focus(); }}>Skip to content</a>;
 }
 
-function Sidebar({ active, navigate, menuOpen, close, profile }) {
+function Sidebar({ active, navigate, menuOpen, close, profile, user }) {
   const [smallScreen, setSmallScreen] = useState(() => window.matchMedia("(max-width: 680px)").matches);
   const sidebar = useRef(null);
   useEffect(() => {
@@ -352,7 +356,7 @@ function Sidebar({ active, navigate, menuOpen, close, profile }) {
   }, [menuOpen, smallScreen]);
   const renderItem = (item) => {
     const Icon = item.icon;
-    return <button key={item.id} aria-current={active === item.id ? "page" : undefined} className={`r-nav-item ${active === item.id ? "active" : ""}`} onClick={() => navigate(item.id)}><Icon size={18} /><span>{item.label}</span>{active === item.id ? <i /> : null}</button>;
+    return <button key={item.id} data-track={`nav_${item.id}`} aria-current={active === item.id ? "page" : undefined} className={`r-nav-item ${active === item.id ? "active" : ""}`} onClick={() => navigate(item.id)}><Icon size={18} /><span>{item.label}</span>{active === item.id ? <i /> : null}</button>;
   };
   return (
     <>
@@ -364,6 +368,7 @@ function Sidebar({ active, navigate, menuOpen, close, profile }) {
         </button>
         <nav className="r-nav" aria-label="Main navigation"><p>Recruiting</p>{MAIN_NAV.map(renderItem)}<p className="r-nav-tools-label">Tools</p>{TOOL_NAV.map(renderItem)}</nav>
         <div className="r-directory-status"><ShieldCheck size={17} /><span><strong>293 programs imported</strong><small>Coach directory updated Aug 29</small></span></div>
+        <a className="r-account-link" href={`${import.meta.env.BASE_URL}#/${user ? "account" : "signin"}`} data-track="sign_in"><span><UserRound size={17} />{user ? "My account" : "Sign in / create account"}</span><ArrowUpRight size={15} /></a>
       </aside>
     </>
   );
@@ -371,9 +376,15 @@ function Sidebar({ active, navigate, menuOpen, close, profile }) {
 
 function SchoolCard({ school, saved, onSave, onEmail, expanded, onExpand }) {
   const contacts = emailCount(school);
+  const [copiedCoach, setCopiedCoach] = useState(null);
+  const [copyIssue, setCopyIssue] = useState(false);
+  const copyCoach = async (email, index) => {
+    try { await navigator.clipboard.writeText(email); setCopiedCoach(index); setCopyIssue(false); trackEvent("email_copied", { school_id: school.id, part: "coach_address" }); window.setTimeout(() => setCopiedCoach(null), 1500); }
+    catch { setCopyIssue(true); trackEvent("copy_failed", { part: "coach_address" }); }
+  };
   return (
     <article className={`school-card ${expanded ? "expanded" : ""}`}>
-      <button className="school-card-main" aria-expanded={expanded} onClick={onExpand}>
+      <button className="school-card-main" data-track="view_coach_contacts" aria-expanded={expanded} onClick={() => { if (!expanded) trackEvent("view_coach_contacts", { school_id: school.id, result_count: contacts }); onExpand(); }}>
         <SchoolLogo school={school} />
         <span className="school-card-copy"><strong>{school.school}</strong><small><MapPin size={12} />{school.state} <i /> {school.conference || "Conference not listed"}</small></span>
         <span className="school-card-side"><Tag tone={school.division.startsWith("Division") ? "blue" : "neutral"}>{school.division}</Tag><small>{contacts ? `${contacts} email${contacts === 1 ? "" : "s"}` : "Research needed"}</small></span>
@@ -382,9 +393,10 @@ function SchoolCard({ school, saved, onSave, onEmail, expanded, onExpand }) {
       {expanded ? (
         <div className="school-card-detail">
           <div className="coach-list">
-            {school.coaches.map((coach, index) => <div key={`${coach.email}-${coach.lastName}-${index}`}><span className="coach-avatar">{`${coach.firstName?.[0] || ""}${coach.lastName?.[0] || ""}`}</span><span><strong>{[coach.firstName, coach.lastName].filter(Boolean).join(" ") || "Coach name unavailable"}</strong><small>{coach.position || "Coach"}</small></span><span className="coach-contact">{coach.email ? <a href={`mailto:${coach.email}`}>{coach.email}</a> : <small>Email not listed</small>}{coach.phone ? <small>{coach.phone}</small> : null}</span></div>)}
+            {school.coaches.map((coach, index) => <div key={`${coach.email}-${coach.lastName}-${index}`}><span className="coach-avatar">{`${coach.firstName?.[0] || ""}${coach.lastName?.[0] || ""}`}</span><span><strong>{[coach.firstName, coach.lastName].filter(Boolean).join(" ") || "Coach name unavailable"}</strong><small>{coach.position || "Coach"}</small></span><span className="coach-contact">{coach.email ? <><a data-track="coach_email" onClick={() => trackEvent("coach_email_click", { school_id: school.id })} href={`mailto:${coach.email}`}>{coach.email}</a><IconButton label="Copy coach email" data-track="copy_coach_email" onClick={() => copyCoach(coach.email, index)}>{copiedCoach === index ? <Check size={13} /> : <Clipboard size={13} />}</IconButton></> : <small>Email not listed</small>}{coach.phone ? <small>{coach.phone}</small> : null}</span></div>)}
           </div>
-          <div className="school-card-actions"><Button variant={saved ? "soft" : "secondary"} icon={saved ? Check : Plus} onClick={onSave}>{saved ? "Saved" : "Add to list"}</Button><Button icon={PenLine} onClick={onEmail}>Create email</Button></div>
+          {copyIssue ? <p className="r-inline-error" role="alert">Copying was blocked. Select the address to copy it manually.</p> : null}
+          <div className="school-card-actions"><Button data-track="save_school" variant={saved ? "soft" : "secondary"} icon={saved ? Check : Plus} onClick={onSave}>{saved ? "Saved" : "Add to list"}</Button><Button data-track="create_email" icon={PenLine} onClick={onEmail}>Create email</Button></div>
         </div>
       ) : null}
     </article>
@@ -458,8 +470,9 @@ function MatchesPage({ schools, savedIds, onSave, onEmail, answers, setAnswers, 
     advancing.current = true;
     setChanging(true);
     const next = { ...answers, [question.id]: value };
+    trackEvent("match_answer", { question: question.id });
     setAnswers(next);
-    if (step === MATCH_QUESTIONS.length - 1) setShowResults(true);
+    if (step === MATCH_QUESTIONS.length - 1) { setShowResults(true); trackEvent("match_complete"); }
     else setStep((current) => current + 1);
   };
   useEffect(() => {
@@ -500,6 +513,11 @@ function DirectoryPage({ schools, savedIds, onSave, onEmail, loading }) {
   const [limit, setLimit] = useState(30);
   useEffect(() => { setLimit(30); setExpanded(null); }, [search, division, region]);
   const filtered = useMemo(() => schools.filter((school) => !search || `${school.school} ${school.state} ${school.conference}`.toLowerCase().includes(search.toLowerCase())).filter((school) => division === "all" || school.division === division).filter((school) => region === "all" || school.region === region), [schools, search, division, region]);
+  useEffect(() => {
+    if (loading || (!search && division === "all" && region === "all")) return;
+    const timer = window.setTimeout(() => trackEvent("college_search", { has_query: Boolean(search), result_count: filtered.length, division: division.replaceAll(" ", "_"), region }), 650);
+    return () => window.clearTimeout(timer);
+  }, [search, division, region, filtered.length, loading]);
   return <div className="r-page"><PageHeader eyebrow="College directory" title="Your next program starts here." description="Explore schools, review the listed coaches, and build a list to research. Verify contact details on the program's athletics website before reaching out." action={<Tag tone="green"><Building2 size={13} /> {schools.length} programs</Tag>} />
     <div className="r-directory-toolbar"><label><Search size={17} /><input aria-label="Search programs" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search school, state or conference" /></label><select aria-label="Division" value={division} onChange={(event) => setDivision(event.target.value)}><option value="all">All divisions</option>{["Division I", "Division II", "Division III", "NAIA", "Junior College", "CCCAA"].map((value) => <option key={value}>{value}</option>)}</select><select aria-label="Region" value={region} onChange={(event) => setRegion(event.target.value)}><option value="all">All regions</option>{["West", "Northeast", "Midwest", "South"].map((value) => <option key={value}>{value}</option>)}</select></div>
     <div className="r-directory-count"><span>{filtered.length} programs</span><small>{filtered.filter((school) => emailCount(school)).length} with at least one email</small></div>
@@ -523,7 +541,7 @@ function ProfilePage({ profile, setProfile, focus, navigate, saveProgress, progr
     window.setTimeout(() => document.getElementById(focus)?.focus(), 180);
   }, [focus]);
   const update = (key, value) => setProfile((current) => ({ ...current, [key]: value }));
-  const saveFlash = () => { setSaved(saveProgress()); window.setTimeout(() => setSaved(false), 1500); };
+  const saveFlash = () => { const didSave = saveProgress(); setSaved(didSave); if (didSave) trackEvent("profile_saved", { complete: profilePercent(profile) === 100 }); window.setTimeout(() => setSaved(false), 1500); };
   const percent = profilePercent(profile);
   const tabButton = (item) => { const Icon = item.icon; return <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)}><Icon size={16} /><span>{item.label}</span></button>; };
 
@@ -558,7 +576,7 @@ function EmailPage({ profile, schools, selectedSchoolId, onSelectSchool, onSaveS
   const [copyError, setCopyError] = useState(false);
   const researchNote = notes[school?.id] || "";
   const email = useMemo(() => buildRecruitingEmail(profile, school, researchNote, includeSchedule, includeCoach), [profile, school, researchNote, includeSchedule, includeCoach]);
-  const copy = async (value, type) => { try { await navigator.clipboard.writeText(value); setCopyError(false); setCopied(type); window.setTimeout(() => setCopied(""), 1400); } catch { setCopied(""); setCopyError(true); } };
+  const copy = async (value, type) => { try { await navigator.clipboard.writeText(value); setCopyError(false); setCopied(type); trackEvent("email_copied", { part: type === "all" ? "full_email" : "subject", school_id: school?.id }); window.setTimeout(() => setCopied(""), 1400); } catch { setCopied(""); setCopyError(true); trackEvent("copy_failed", { part: type === "all" ? "full_email" : "subject" }); } };
   const missing = REQUIRED_PROFILE_FIELDS.filter((key) => !profileFieldComplete(profile, key));
   const percent = profilePercent(profile);
   useEffect(() => { if (hasSchedule) setIncludeSchedule(true); }, [hasSchedule]);
@@ -583,7 +601,7 @@ function EmailPage({ profile, schools, selectedSchoolId, onSelectSchool, onSaveS
       </aside>
       <section className="r-email-preview">
         {copyError ? <p className="r-inline-error" role="alert">Your browser blocked copying. You can select the email text below and copy it manually.</p> : null}
-        <div className="r-email-preview-bar"><div><span>Recruiting introduction</span><Tag tone={researchNote ? "green" : "coral"}>{researchNote ? "Personalized" : "Needs school research"}</Tag></div><Button variant="secondary" icon={copied === "all" ? Check : Clipboard} onClick={() => copy(`Subject: ${email.subject}\n\n${email.body}`, "all")}>{copied === "all" ? "Copied" : "Copy email"}</Button></div>
+        <div className="r-email-preview-bar"><div><span>Recruiting introduction</span><Tag tone={researchNote ? "green" : "coral"}>{researchNote ? "Personalized" : "Needs school research"}</Tag></div><Button data-track="copy_email" variant="secondary" icon={copied === "all" ? Check : Clipboard} onClick={() => copy(`Subject: ${email.subject}\n\n${email.body}`, "all")}>{copied === "all" ? "Copied" : "Copy email"}</Button></div>
         <div className="r-subject-row"><span>Subject</span><strong>{email.subject}</strong><IconButton label="Copy subject" onClick={() => copy(email.subject, "subject")}>{copied === "subject" ? <Check size={16} /> : <Clipboard size={16} />}</IconButton></div>
         <pre>{email.body}</pre>
       </section>
@@ -592,9 +610,10 @@ function EmailPage({ profile, schools, selectedSchoolId, onSelectSchool, onSaveS
 }
 
 function OutreachPage({ saved, setSaved, schoolsById, onEmail, navigate }) {
-  const update = (schoolId, patch) => setSaved((current) => current.map((item) => item.schoolId === schoolId ? { ...item, ...patch } : item));
-  const logSent = (entry) => update(entry.schoolId, { sentHistory: [...(entry.sentHistory || []), { sent: entry.sent || 0, lastSent: entry.lastSent || "", status: entry.status || "Saved" }], sent: Number(entry.sent || 0) + 1, lastSent: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), status: "Sent" });
+  const update = (schoolId, patch) => { if (patch.status) trackEvent("outreach_status_changed", { school_id: schoolId, status: patch.status.replaceAll(" ", "_") }); setSaved((current) => current.map((item) => item.schoolId === schoolId ? { ...item, ...patch } : item)); };
+  const logSent = (entry) => { trackEvent("outreach_sent_logged", { school_id: entry.schoolId }); update(entry.schoolId, { sentHistory: [...(entry.sentHistory || []), { sent: entry.sent || 0, lastSent: entry.lastSent || "", status: entry.status || "Saved" }], sent: Number(entry.sent || 0) + 1, lastSent: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), status: "Sent" }); };
   const undoSent = (entry) => {
+    trackEvent("outreach_sent_undone", { school_id: entry.schoolId });
     if (entry.sentHistory?.length) {
       const history = [...entry.sentHistory];
       const previous = history.pop();
@@ -697,6 +716,7 @@ function JumpPage({ profile, setProfile }) {
     if (file.size > 500 * 1024 * 1024) { setMediaError("Choose a shorter clip under 500 MB."); return; }
     if (mediaUrl) URL.revokeObjectURL(mediaUrl);
     setMediaUrl(URL.createObjectURL(file));
+    trackEvent("jump_clip_uploaded");
     setMediaReady(false);
     setMediaError("");
     setVideoState({ duration: 0, time: 0, width: 1280, height: 720, playing: false });
@@ -735,6 +755,7 @@ function JumpPage({ profile, setProfile }) {
     if (!canSave) return;
     setProfile((current) => ({ ...current, standingReach: `${recommended.stand.toFixed(1)}\"`, approachTouch: `${recommended.peak.toFixed(1)}\"`, vertical: `${recommended.vertical.toFixed(1)}\"` }));
     setSavedMeasurement(true);
+    trackEvent("jump_result_saved");
   };
   const addTrial = () => {
     if (!canSave || !result?.validRange) return;
@@ -822,25 +843,32 @@ function JumpPage({ profile, setProfile }) {
 }
 
 function RecruitApp() {
+  const { client, user } = useAuth();
   const reduceMotion = useReducedMotion();
   const query = new URLSearchParams(window.location.search);
   const demoMode = query.get("demo") === "1";
-  const profileStorageKey = demoMode ? "vr-demo-profile" : "vr3-profile";
-  const outreachStorageKey = demoMode ? "vr-demo-outreach" : "vr2-outreach";
-  const schoolStorageKey = demoMode ? "vr-demo-selected-school" : "vr2-selected-school";
+  const keys = workspaceKeys(user?.id, demoMode);
+  const profileStorageKey = keys.profile;
+  const outreachStorageKey = keys.saved;
+  const schoolStorageKey = keys.selectedSchoolId;
   const routeFromHash = () => { const route = window.location.hash.replace(/^#\/?/, ""); return ROUTES.includes(route) ? route : "home"; };
   const [active, setActive] = useState(routeFromHash);
   const [menuOpen, setMenuOpen] = useState(false);
   const [directory, setDirectory] = useState({ schools: [], loading: true, error: false });
   const [directoryAttempt, setDirectoryAttempt] = useState(0);
-  const [profile, setProfile] = useStoredState(profileStorageKey, demoMode ? DEMO_PROFILE : DEFAULT_PROFILE);
+  const [profile, storeProfile] = useStoredState(profileStorageKey, demoMode ? DEMO_PROFILE : DEFAULT_PROFILE);
+  const setProfile = (action) => storeProfile((current) => {
+    const next = typeof action === "function" ? action(current) : action;
+    if (profilePercent(current) < 100 && profilePercent(next) === 100) trackEvent("profile_complete");
+    return next;
+  });
   const [saved, setSaved] = useStoredState(outreachStorageKey, demoMode ? [
     { schoolId: "massachusetts-institute-of-technology-mit", status: "Drafting", sent: 1, followup: "", lastSent: "" },
     { schoolId: "adrian-college", status: "Researching", sent: 0, followup: "", lastSent: "" }
   ] : []);
   const [selectedSchoolId, setSelectedSchoolId] = useStoredState(schoolStorageKey, demoMode ? "massachusetts-institute-of-technology-mit" : "");
-  const answersStorageKey = demoMode ? "vr-demo-match-answers" : "vr2-match-answers";
-  const notesStorageKey = demoMode ? "vr-demo-school-notes" : "vr2-school-notes";
+  const answersStorageKey = keys.answers;
+  const notesStorageKey = keys.notes;
   const [answers, setAnswers] = useStoredState(answersStorageKey, {});
   const [notes, setNotes] = useStoredState(notesStorageKey, {});
   const [profileFocus, setProfileFocus] = useState("");
@@ -902,12 +930,16 @@ function RecruitApp() {
   const savedIds = useMemo(() => new Set(saved.map((item) => item.schoolId)), [saved]);
 
   const navigate = (route, focus = "") => {
-    const change = () => { window.history.pushState({}, "", `#/${route}`); setActive(route); setProfileFocus(focus); setMenuOpen(false); window.scrollTo({ top: 0, behavior: "instant" }); };
+    trackEvent("navigation", { destination: route });
+    const change = () => { window.history.pushState({}, "", `#/${route}`); setActive(route); setProfileFocus(focus); setMenuOpen(false); window.scrollTo({ top: 0, behavior: "instant" }); window.dispatchEvent(new Event("vr-route-change")); };
     if (document.startViewTransition) document.startViewTransition(change); else change();
   };
-  const saveSchool = (school) => setSaved((current) => current.some((item) => item.schoolId === school.id) ? current : [...current, { schoolId: school.id, status: "Saved", sent: 0, followup: "", lastSent: "" }]);
+  const saveSchool = (school) => { if (!savedIds.has(school.id)) trackEvent("school_saved", { school_id: school.id, division: school.division?.replaceAll(" ", "_") }); setSaved((current) => current.some((item) => item.schoolId === school.id) ? current : [...current, { schoolId: school.id, status: "Saved", sent: 0, followup: "", lastSent: "" }]); };
   const openEmail = (school) => { saveSchool(school); setSelectedSchoolId(school.id); navigate("email"); };
   const progress = { profile, saved, selectedSchoolId, answers, notes };
+  const defaults = { profile: DEFAULT_PROFILE, saved: [], selectedSchoolId: "", answers: {}, notes: {} };
+  const applyWorkspace = (next) => { storeProfile(next.profile); setSaved(next.saved); setSelectedSchoolId(next.selectedSchoolId); setAnswers(next.answers); setNotes(next.notes); };
+  const sync = useWorkspaceSync({ client, userId: user?.id, enabled: Boolean(client && user && !demoMode), progress, apply: applyWorkspace, defaults });
   const saveProgress = () => [
     [profileStorageKey, profile], [outreachStorageKey, saved], [schoolStorageKey, selectedSchoolId], [answersStorageKey, answers], [notesStorageKey, notes]
   ].map(([key, value]) => persistValue(key, value)).every(Boolean);
@@ -922,6 +954,7 @@ function RecruitApp() {
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setBackupMessage("Backup downloaded. Keep it private; it contains your profile and contact details.");
+    trackEvent("backup_downloaded");
   };
   const readBackup = async (event) => {
     const file = event.target.files?.[0];
@@ -942,8 +975,10 @@ function RecruitApp() {
     setNotes(pendingImport.notes);
     setPendingImport(null);
     setBackupMessage("Progress restored.");
+    trackEvent("backup_restored");
   };
-  const progressTools = <section className="r-progress-tools"><div><ShieldCheck size={19} /><span><strong>{storageErrors.length ? "Browser saving needs attention" : demoMode ? "Demo workspace" : "Your progress saves automatically"}</strong><small>{demoMode ? "Sample progress stays separate from your own profile." : "Saved on this browser. Download a backup to keep a copy or move devices."}</small></span></div><div><Button variant="secondary" icon={Download} onClick={exportProgress}>Back up</Button><Button variant="ghost" icon={Upload} onClick={() => importInput.current?.click()}>Restore</Button><input ref={importInput} type="file" hidden accept="application/json,.json" onChange={readBackup} /></div>{backupMessage ? <p role="status">{backupMessage}</p> : null}{pendingImport ? <div className="r-restore-confirm" role="group" aria-label="Confirm restore"><span>Restore {pendingImport.profile.name || "this athlete"}'s backup? This replaces the progress currently in this browser.</span><Button onClick={restoreBackup}>Restore backup</Button><Button variant="ghost" onClick={() => setPendingImport(null)}>Cancel</Button></div> : null}</section>;
+  const saveLabel = demoMode ? "Demo workspace" : user ? sync.status === "saved" ? "Saved to your account" : sync.status === "saving" ? "Saving to your account..." : "Cloud save needs attention" : "Saved on this browser";
+  const progressTools = <section className="r-progress-tools"><div><ShieldCheck size={19} /><span><strong>{storageErrors.length ? "Browser saving needs attention" : demoMode ? "Demo workspace" : "Your progress saves automatically"}</strong><small>{demoMode ? "Sample progress stays separate from your own profile." : user ? `${saveLabel}. Keep a backup of important progress.` : "Saved on this browser. Download a backup to keep a copy or move devices."}</small></span></div><div><Button variant="secondary" icon={Download} onClick={exportProgress} data-track="backup_download">Back up</Button><Button variant="ghost" icon={Upload} onClick={() => importInput.current?.click()} data-track="backup_restore">Restore</Button><input ref={importInput} type="file" hidden accept="application/json,.json" onChange={readBackup} /></div>{backupMessage ? <p role="status">{backupMessage}</p> : null}{pendingImport ? <div className="r-restore-confirm" role="group" aria-label="Confirm restore"><span>Restore {pendingImport.profile.name || "this athlete"}'s backup? This replaces the progress currently in this {user ? "account" : "browser"}.</span><Button onClick={restoreBackup}>Restore backup</Button><Button variant="ghost" onClick={() => setPendingImport(null)}>Cancel</Button></div> : null}</section>;
 
   const page = () => {
     switch (active) {
@@ -954,31 +989,41 @@ function RecruitApp() {
       case "outreach": return <OutreachPage saved={saved} setSaved={setSaved} schoolsById={schoolsById} onEmail={openEmail} navigate={navigate} />;
       case "timeline": return <TimelinePage navigate={navigate} />;
       case "jump": return <JumpPage profile={profile} setProfile={setProfile} />;
+      case "account": return demoMode ? <div className="r-page"><PageHeader eyebrow="Demo workspace" title="Account actions stay outside the demo." description="Your real account and its saved progress are separate from this sample athlete." /><a className="r-button" href={`${import.meta.env.BASE_URL}#/account`}>Leave demo and open my account<ArrowUpRight size={16} /></a></div> : user ? <AccountPage sync={sync} defaults={defaults} apply={applyWorkspace} backup={exportProgress} saveProgress={saveProgress} /> : null;
       default: return <HomePage profile={profile} saved={saved} schoolsById={schoolsById} navigate={navigate} />;
     }
   };
+  const leaveAccount = async () => {
+    const { error } = await client.auth.signOut({ scope: "local" });
+    if (error) { setBackupMessage("Sign-out could not finish. Check your connection and keep a backup of pending changes."); return; }
+    trackEvent("sign_out");
+    window.location.hash = "/home";
+  };
 
+  if (user && !demoMode && ["loading", "load-error", "conflict"].includes(sync.status)) return <main className="r-cloud-gate"><ShieldCheck size={28} /><h1>{sync.status === "loading" ? "Opening your saved workspace..." : sync.status === "conflict" ? "Two copies need your attention." : "We could not load your account progress."}</h1><p>{sync.status === "loading" ? "Getting your profile and school list from your account." : sync.status === "conflict" ? "Your account changed on another device while this browser had unsaved edits. Choose the copy to keep. Download this browser's copy first to preserve both." : "Your browser copy is still here. Reconnect and retry before editing so we do not overwrite your cloud progress."}</p><div>{sync.status !== "loading" ? <Button icon={Download} variant="secondary" onClick={exportProgress}>Back up this browser copy</Button> : null}{sync.status === "load-error" ? <Button onClick={sync.retry}>Retry account loading</Button> : null}{sync.status === "conflict" ? <><Button onClick={() => sync.resolve(false)}>Use cloud copy</Button><Button variant="secondary" onClick={() => sync.resolve(true)}>Keep this browser copy</Button></> : null}{sync.status !== "loading" ? <Button variant="ghost" onClick={leaveAccount}>Sign out and use browser-only</Button> : null}</div>{backupMessage ? <p role="status">{backupMessage}</p> : null}<a href="#/landing">Back to website</a></main>;
   return <div className="r-app">
     <SkipLink />
-    <Sidebar active={active} navigate={navigate} menuOpen={menuOpen} close={() => setMenuOpen(false)} profile={profile} />
+    <Sidebar active={active} navigate={navigate} menuOpen={menuOpen} close={() => setMenuOpen(false)} profile={profile} user={user} />
     <div className="r-main">
       <header className="r-mobile-header">
         <IconButton label="Open navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}><Menu size={20} /></IconButton>
         <button className="r-mobile-brand" onClick={() => navigate("home")}><img src={publicUrl("assets/volleyreach-mark-light.svg")} alt="" /><strong>VolleyReach</strong></button>
       </header>
       <header className="r-topbar">
-        <div><span>VolleyReach</span><ChevronRight size={13} /><strong>{[...MAIN_NAV, ...TOOL_NAV].find((item) => item.id === active)?.label}</strong></div>
+        <div><span>VolleyReach</span><ChevronRight size={13} /><strong>{[...MAIN_NAV, ...TOOL_NAV].find((item) => item.id === active)?.label || "My account"}</strong></div>
         <div className="r-top-actions">
-          <span className={`r-save-status ${storageErrors.length ? "error" : ""}`}><span />{storageErrors.length ? "Saving unavailable" : demoMode ? "Demo workspace" : "Saved on this browser"}</span>
+          <span className={`r-save-status ${storageErrors.length ? "error" : ""}`}><span />{storageErrors.length ? "Browser saving unavailable" : saveLabel}</span>
           <button className="r-top-profile" onClick={() => navigate("profile")}><span className="r-avatar">{profile.name ? schoolInitials(profile.name) : <UserRound size={15} />}</span><span><strong>{profile.name || "Your profile"}</strong><small>{profilePercent(profile)}% complete</small></span><ChevronRight size={15} /></button>
         </div>
       </header>
       {storageErrors.length ? <div className="r-app-notice error" role="alert"><Info size={17} /><span>Your browser could not save all your progress. Keep this tab open and download a backup from My Profile.</span><Button variant="secondary" onClick={() => navigate("profile")}>My Profile</Button></div> : null}
+      {user && !demoMode && sync.status === "error" ? <div className="r-sync-notice" role="alert"><Info size={17} /><span>Changes have not reached your account. Keep this tab open, check your connection, or download a backup.</span><Button variant="secondary" onClick={sync.flush}>Retry cloud save</Button></div> : null}
       {directory.error ? <div className="r-app-notice" role="alert"><Info size={17} /><span>We could not load the college directory. Your saved progress is still here.</span><Button variant="secondary" icon={RotateCcw} onClick={() => setDirectoryAttempt((value) => value + 1)}>Try again</Button></div> : null}
       {demoMode ? <div className="r-demo-banner"><span>Sample athlete. Changes here stay in the demo.</span><a href={`${import.meta.env.BASE_URL}#/home`}>Open my workspace <ArrowUpRight size={13} /></a></div> : null}
       <AnimatePresence mode="wait">
         <motion.main id="main-content" tabIndex={-1} key={active} initial={reduceMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={reduceMotion ? {} : { opacity: 0, y: -5 }} transition={{ duration: reduceMotion ? 0 : .2 }}>{page()}</motion.main>
       </AnimatePresence>
+      <footer className="r-workspace-footer"><a href="#/landing" data-track="website_home">About VolleyReach</a><a href="#/privacy">Privacy</a><a href="#/terms">Terms</a><button onClick={() => window.dispatchEvent(new Event("vr-open-privacy"))}>Cookie settings</button></footer>
     </div>
   </div>;
 }

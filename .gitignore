@@ -6,6 +6,7 @@ test-results/
 playwright-report/
 .env
 .env.*
+!.env.example
 *.local
 deliverables/*.mov
 deliverables/*.inspect.ndjson
