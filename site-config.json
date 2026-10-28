@@ -1,0 +1,7 @@
+{
+  "googleAnalyticsId": "",
+  "supabaseUrl": "",
+  "supabasePublishableKey": "",
+  "googleSignIn": false,
+  "appleSignIn": false
+}
