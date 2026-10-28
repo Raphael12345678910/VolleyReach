@@ -69,6 +69,21 @@ test("internal sidebar navigation counts one page view and never includes profil
   expect(JSON.stringify(recorded)).not.toContain("Never Forward");
 });
 
+test("directory inputs wait for data and keep the first search after loading", async ({ page }) => {
+  await prepare(page);
+  let release;
+  const ready = new Promise((resolve) => { release = resolve; });
+  await page.route("**/data/coaches.json", async (route) => { await ready; await route.continue(); });
+  await page.goto("#/directory");
+  const input = page.getByRole("textbox", { name: "Search programs" });
+  await expect(input).toBeDisabled();
+  release();
+  await expect(input).toBeEnabled();
+  await input.fill("Massachusetts Institute");
+  await expect(input).toHaveValue("Massachusetts Institute");
+  await expect(page.locator(".school-card")).toHaveCount(1);
+});
+
 test("demo activity and browser privacy signals are excluded from analytics", async ({ page }) => {
   const traffic = await prepare(page);
   await page.goto("?demo=1#/home");

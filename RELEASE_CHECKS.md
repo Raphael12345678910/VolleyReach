@@ -14,7 +14,7 @@
 
 ## Verification Scope
 
-The suite now contains 13 unit checks and 123 browser workflow checks across desktop Chrome, phone-sized Chrome and phone-sized WebKit. It covers the previous recruiting workflows as well as account separation, password reset callbacks, provider redirects, cloud-save recovery and privacy choices. Production builds, responsive screenshots and the dependency audit are also checked. GitHub Actions runs the final source; its run is the release verification record.
+The suite now contains 13 unit checks and 126 browser workflow checks across desktop Chrome, phone-sized Chrome and phone-sized WebKit. It covers the previous recruiting workflows as well as account separation, password reset callbacks, provider redirects, cloud-save recovery and privacy choices. Production builds, responsive screenshots and the dependency audit are also checked. GitHub Actions runs the final source; its run is the release verification record.
 
 The account tests use the official Supabase client against a controlled mock service. No real provider account, SMTP sender, deployed database policy or Analytics reporting property has been configured for this release. See `SETUP_ACCOUNTS_AND_ANALYTICS.md` for activation and real-service acceptance checks. A passing test suite is not a promise of zero possible bugs or a legal/security certification.
 
